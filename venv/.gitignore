@@ -1,0 +1,5 @@
+# created by virtualenv automatically
+.env
+Lib
+Scripts
+sql_functions.py
