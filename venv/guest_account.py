@@ -28,25 +28,29 @@ class GuestAccount(tk.Frame):
         except Exception as e:
             print('vending error: ', e)
 
-
-
-
 class AccountInfo(tk.Frame):
     def __init__(self, notebook, db, current_user):
         tk.Frame.__init__(self, notebook)
         self.db = db
+        self.current_user = current_user
         self.user_reservaions = self.get_reservations(current_user.phone)
         welcome_label = tk.Label(self, text='Добро пожаловать!')
         welcome_label.grid(row=1, column=0, padx=20)
         name_label = tk.Label(self, text = f'Имя: {current_user.name} {current_user.surname}')
         name_label.grid(row=2, column=0, padx=20)
 
+        self.update_btn = tk.Button(self, text='Обновить', command=self.update_tables)
+        self.update_btn.grid(row=4, column=5, padx=20, pady=10)
+
         colums = ['Отель', 'Дата заезда', 'Дата выезда']
         self.reservations = ttk.Treeview(self, columns=colums, show='headings')
-        self.reservations.grid(row=1, column=5)
+        self.reservations.grid(row=2, column=5)
         self.reservations.heading("Отель", text="Отель")
         self.reservations.heading("Дата заезда", text="Дата заезда")
         self.reservations.heading("Дата выезда", text="Дата выезда")
+        self.reservations.column("#1", stretch=False, width=200)
+        self.reservations.column("#2", stretch=False, width=120)
+        self.reservations.column("#3", stretch=False, width=120)
         for r in self.user_reservaions:
             self.reservations.insert("", tk.END, values=r)
 
@@ -60,6 +64,14 @@ class AccountInfo(tk.Frame):
             return user_reservation
         except Exception as e:
             print(e)
+
+    def update_tables(self):
+        for item in self.reservations.get_children():
+            self.reservations.delete(item)
+
+        new_reservations = self.get_reservations(self.current_user.phone)
+        for r in new_reservations:
+            self.reservations.insert("", tk.END, values=r)
 
 class GuestReservation(tk.Frame):
     def __init__(self, notebook, db, current_user):
@@ -98,7 +110,7 @@ class GuestReservation(tk.Frame):
 
         end_label = tk.Label(self, text = 'Окончание бронирования:')
         end_label.grid(row=4, column=2, padx=20)
-        self.date2 = tkcalendar.DateEntry(self, mindate=(datetime.now() + timedelta(days=1)),
+        self.date2 = tkcalendar.DateEntry(self, mindate=(datetime.now() + timedelta(days=2)),
                                           maxdate=(datetime.now() + timedelta(days=365)))
         self.date2.grid(row=4, column=3, padx=10)
         self.date2.bind("<<DateEntrySelected>>", self.calc_price)
@@ -145,6 +157,8 @@ class GuestReservation(tk.Frame):
 
     def calc_price(self, event):
         try:
+            self.date2['mindate'] = self.date1.get_date()+timedelta(days=1)
+
             selection = self.rooms_listbox.curselection()
             delta = (self.date2.get_date() - self.date1.get_date()).days
             self.price = self.full_rooms[selection[0]]['price'] * delta

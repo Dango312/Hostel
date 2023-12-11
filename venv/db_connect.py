@@ -77,7 +77,7 @@ class DataBase():
         """
         try:
             cursor = self.connection.cursor()
-            insert_query = f"INSERT INTO guests VALUES ('{phone}', '{name}', '{surname}', '{email}', '{password}')"
+            insert_query = f"INSERT INTO guests VALUES ('{phone}', '{name}', '{surname}', '{email}', '{password}', '0')"
             cursor.execute(insert_query)
             self.connection.commit()
             print("Succes")

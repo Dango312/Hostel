@@ -1,5 +1,6 @@
 # created by virtualenv automatically
 .env
+test.py
 Lib
 Scripts
 sql_functions.py
