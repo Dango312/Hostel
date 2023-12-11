@@ -220,6 +220,17 @@ class DataBase():
         except Exception as e:
             print("get_products error", e)
 
+    def buy_products(self, idVending, products):
+        try:
+            products = [prod['quantity'] for prod in products]
+            cursor = self.connection.cursor()
+            buy_products = f"CALL set_new_products({idVending}, {products[0]}, {products[1]}, {products[2]}, " \
+                        f"{products[3]}, {products[4]}, {products[5]})"
+            cursor.execute(buy_products)
+            self.connection.commit()
+        except Exception as e:
+            print("buy_products error", e)
+
 
 def removeSQLinjection(text) -> str:
     text = text.replace("'", "")

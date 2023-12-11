@@ -184,23 +184,23 @@ class GuestsVending(tk.Frame):
         self.water_btn.grid(row=0, column=0)
 
         self.cola_icon = tk.PhotoImage(file="venv/icons/cola_icon.png")
-        self.cola_btn = tk.Button(self.vend, text='3', image=self.cola_icon, compound="top", command=lambda: self.add_to_cart('вода', '80'))
+        self.cola_btn = tk.Button(self.vend, text='3', image=self.cola_icon, compound="top", command=lambda: self.add_to_cart('кола', '80'))
         self.cola_btn.grid(row=0, column=1)
 
         self.juice_icon = tk.PhotoImage(file="venv/icons/juice_icon.png")
-        self.juice_btn = tk.Button(self.vend, text='3', image=self.juice_icon, compound="top", command=lambda: self.add_to_cart('вода', '70'))
+        self.juice_btn = tk.Button(self.vend, text='3', image=self.juice_icon, compound="top", command=lambda: self.add_to_cart('сок', '70'))
         self.juice_btn.grid(row=2, column=0)
 
         self.sandwich_icon = tk.PhotoImage(file="venv/icons/sandwich_icon.png")
-        self.sandwich_btn = tk.Button(self.vend, text='3', image=self.sandwich_icon, compound="top", command=lambda: self.add_to_cart('вода', '160'))
+        self.sandwich_btn = tk.Button(self.vend, text='3', image=self.sandwich_icon, compound="top", command=lambda: self.add_to_cart('сэндвич', '160'))
         self.sandwich_btn.grid(row=2, column=1)
 
         self.chips_icon = tk.PhotoImage(file="venv/icons/chips_icon.png")
-        self.chips_btn = tk.Button(self.vend, text='3', image=self.chips_icon, compound="top", command=lambda: self.add_to_cart('вода', '80'))
+        self.chips_btn = tk.Button(self.vend, text='3', image=self.chips_icon, compound="top", command=lambda: self.add_to_cart('чипсы', '80'))
         self.chips_btn.grid(row=3, column=0)
 
         self.bar_icon = tk.PhotoImage(file="venv/icons/bar_icon.png")
-        self.bar_btn = tk.Button(self.vend, text='3', image=self.bar_icon, compound="top", command=lambda: self.add_to_cart('вода', '60'))
+        self.bar_btn = tk.Button(self.vend, text='3', image=self.bar_icon, compound="top", command=lambda: self.add_to_cart('батончик', '60'))
         self.bar_btn.grid(row=3, column=1)
 
         self.buy_btn = tk.Button(self, text='Купить', command=self.buy_items)
@@ -220,9 +220,9 @@ class GuestsVending(tk.Frame):
         self.cart.grid(row=1,column=5, columnspan=2, padx=10, pady=10)
         self.update_cart_display()
 
-
     def get_products(self):
         self.products = self.db.get_products(self.vending.idMachine)
+        print(self.products)
         buttons_info = {
             'вода': self.water_btn,
             'кола': self.cola_btn,
@@ -242,9 +242,15 @@ class GuestsVending(tk.Frame):
                 button['text'] = f'{product_price}р.'
 
     def add_to_cart(self, product_name, product_price):
-        self.cart_items.append({'product_name': product_name, 'product_price': product_price})
-        print(f'Товар "{product_name}" добавлен в корзину.')
-        self.update_cart_display()  # Обновляем отображение корзины
+        for product in self.products:
+            if product['product_name'] == product_name:
+                if product['quantity'] > 0:
+                    self.cart_items.append({'product_name': product_name, 'product_price': product_price})
+                    self.decrease_quantity(product_name)
+                    self.update_cart_display()
+                else:
+                    tk.messagebox.showwarning(title="Предупреждение", message="Товар закончился")
+                break
 
     def decrease_quantity(self, product_name):
         for product in self.products:
@@ -252,36 +258,25 @@ class GuestsVending(tk.Frame):
                 product['quantity'] -= 1
                 if product['quantity'] < 0:
                     product['quantity'] = 0
-                self.update_button_text(product_name, product['quantity'])
-                print(f'Количество товара "{product_name}" в автомате уменьшено.')
-
-    def update_button_text(self, product_name, quantity):
-        buttons_info = {
-            'вода': self.water_btn,
-            'кола': self.cola_btn,
-            'сок': self.juice_btn,
-            'сэндвич': self.sandwich_btn,
-            'чипсы': self.chips_btn,
-            'батончик': self.bar_btn
-        }
-
-        if product_name in buttons_info:
-            button = buttons_info[product_name]
-            button['text'] = f'{quantity}р.' if quantity > 0 else 'Нет в наличии'
+                #self.update_button_text(product_name, product['quantity'])
+                print(self.products)
 
     def buy_items(self):
-        if len(self.cart) > 0:
-            for item in self.cart:
-                self.decrease_quantity(item['product_name'])
-            print('Покупка завершена. Корзина опустошена.')
-            self.cart = []
-        else:
-            print('Корзина пуста. Нечего покупать.')
+        self.db.buy_products(self.vending.idMachine, self.products)
+        children_count = len(self.cart.get_children())
+        if children_count > 0:
+            self.cart.delete(*self.cart.get_children())
+            self.cart_items = []
 
     def clear_cart(self):
         children_count = len(self.cart.get_children())
         if children_count > 0:
             self.cart.delete(*self.cart.get_children())  # Удаляем все дочерние элементы
+            for item in self.cart_items:
+                product_name = item['product_name']
+                for product in self.products:
+                    if product['product_name'] == product_name:
+                        product['quantity'] += 1  # Возвращаем товар в автомат
             self.cart_items = []  # Очищаем список товаров в корзине
             print('Корзина опустошена.')
         else:
