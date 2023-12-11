@@ -1,6 +1,5 @@
-#import tkinter as tk
 import db_connect as db
-#from guest_account import GuestAccount
+from admin_window import AdminWindow
 from login_page import *
 from User import User
 
@@ -29,7 +28,6 @@ class Main(tk.Tk):
         self.show_frame(Login)
 
     def show_frame(self, cont):
-        #print(cont)
         frame = self.frames[cont]
         frame.tkraise()
 
@@ -38,9 +36,13 @@ class Main(tk.Tk):
         self.frames[GuestAccount] = frame
         frame.grid(row=0, column=0, sticky="nsew")
         self.show_frame(GuestAccount)
-"""
-Надо создавать объект класса после логина!!!!!
-"""
+
+    def show_admin_account(self, cur_user):
+        frame = AdminWindow(self.container, self, DB, cur_user)
+        self.frames[AdminWindow] = frame
+        frame.grid(row=0, column=0, sticky="nsew")
+        self.show_frame(AdminWindow)
+
 
 if __name__ == "__main__":
     DB = db.DataBase()

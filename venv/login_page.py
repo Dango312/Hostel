@@ -22,12 +22,15 @@ class Login(tk.Frame):
         pwd_entry.grid(row=4, column=0, padx=20)
 
         def login_user():
-            user_info = db.login(email_entry.get(), pwd_entry.get())
-            #print(user_info)
+            user_info = db.login(email_entry.get(), pwd_entry.get(), 'guest')
             if user_info:
-                current_user.set_user_info(user_info)
+                current_user.set_guest_info(user_info)
                 controller.show_guest_account(current_user)
-                #print('succes')
+            else:
+                user_info = db.login(email_entry.get(), pwd_entry.get(), 'admin')
+                if user_info:
+                    current_user.set_admin_info(user_info)
+                    controller.show_admin_account(current_user)
 
         login = tk.Button(self, text="Войти", command=login_user)
         login.grid(row=5, column=0, padx=20)

@@ -38,7 +38,7 @@ class DataBase():
             finally:
                 self.connection.close()"""
 
-    def login(self, email, password):
+    def login(self, email, password, table):
         """
         :param email: guest`s email
         :param password: guest`s password
@@ -47,10 +47,12 @@ class DataBase():
         try:
             email = removeSQLinjection(email)
             password = removeSQLinjection(password)
-            print(email, password)
 
             cursor = self.connection.cursor()
-            select_all_rows = f"SELECT * FROM guests WHERE guest_email = '{email}' AND guest_password = '{password}'"
+            if table == 'guest':
+                select_all_rows = f"SELECT * FROM guests WHERE guest_email = '{email}' AND guest_password = '{password}'"
+            else:
+                select_all_rows = f"SELECT * FROM employees WHERE employee_email = '{email}' AND employee_password = '{password}'"
             cursor.execute(select_all_rows)
             rows = cursor.fetchall()
             if rows:
@@ -139,6 +141,84 @@ class DataBase():
             return rows
         except Exception as e:
             print("get_user_resrvation error", e)
+
+    def select_hotel(self, idHotel):
+        try:
+            cursor = self.connection.cursor()
+            select_hotel = f"SELECT country, city, adress FROM hotels WHERE idHotel = {idHotel}"
+            cursor.execute(select_hotel)
+            rows = cursor.fetchall()
+            return rows
+        except Exception as e:
+            print("select_hotel error", e)
+
+    def select_rooms(self, idHotel):
+        try:
+            cursor = self.connection.cursor()
+            select_rooms = f"SELECT DISTINCT get_room_guest({idHotel}, room_number) AS name, room_number, status_name, type_name FROM rooms " \
+                           f"JOIN statuses ON rooms.statuses_idStatus = statuses.idStatus " \
+                           f"JOIN types ON rooms.types_idType = types.idType " \
+                           f"JOIN reservation ON reservation.rooms_hotels_idHotel = rooms.hotels_idHotel " \
+                           f"WHERE hotels_idHotel = {idHotel}"
+            cursor.execute(select_rooms)
+            rows = cursor.fetchall()
+            return rows
+        except Exception as e:
+            print("select_rooms error", e)
+
+    def select_hotel_reservations(self, idHotel):
+        try:
+            cursor = self.connection.cursor()
+            select_hotel_reservations = f"SELECT idReservation, phone_number, CONCAT(guest_name, ' ', guest_surname), " \
+                                        f"rooms_room_number, start_date, end_date, checked_in, checked_out FROM reservation " \
+                                        f"JOIN guests ON guests.phone_number = reservation.guests_phone_number " \
+                                        f"WHERE rooms_hotels_idHotel = {idHotel}"
+            cursor.execute(select_hotel_reservations)
+            rows = cursor.fetchall()
+            return rows
+        except Exception as e:
+            print("select_hotel_reservations error", e)
+
+    def check_in_guest(self, idReservation):
+        try:
+            cursor = self.connection.cursor()
+            check_in = f"UPDATE reservation SET checked_in = 1 WHERE idReservation = {idReservation};"
+            cursor.execute(check_in)
+            self.connection.commit()
+        except Exception as e:
+            print("check_in_guest error", e)
+
+    def check_out_guest(self, idReservation):
+        try:
+            cursor = self.connection.cursor()
+            check_out = f"UPDATE reservation SET checked_out = 1 WHERE idReservation = {idReservation}"
+            cursor.execute(check_out)
+            self.connection.commit()
+            print("check_out")
+        except Exception as e:
+            print("check_out_guest error", e)
+
+    def get_idVending(self, idHotel):
+        try:
+            cursor = self.connection.cursor()
+            get_idVending = f"SELECT idVending_machines FROM vending_machines WHERE hotels_idHotel = {idHotel}"
+            cursor.execute(get_idVending)
+            rows = cursor.fetchall()
+            return rows[0]['idVending_machines']
+        except Exception as e:
+            print("get_idVending error", e)
+
+    def get_products(self, idVending):
+        try:
+            cursor = self.connection.cursor()
+            get_products = f"SELECT product_name, quantity, product_price FROM vending_machines_has_products " \
+                           f"JOIN products ON products_idProducts = idProducts " \
+                           f"WHERE vending_machines_idVending_machines = {idVending}"
+            cursor.execute(get_products)
+            rows = cursor.fetchall()
+            return rows
+        except Exception as e:
+            print("get_products error", e)
 
 
 def removeSQLinjection(text) -> str:

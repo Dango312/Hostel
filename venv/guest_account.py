@@ -2,11 +2,10 @@ import tkinter as tk
 from tkinter import ttk
 import tkcalendar
 from datetime import timedelta,date,datetime
-
+from VendingMachine import VendingMachine
 
 class GuestAccount(tk.Frame):
     def __init__(self, parent, controller, db, current_user):
-
         tk.Frame.__init__(self, parent)
         notebook = ttk.Notebook(self)
         notebook.pack(fill=tk.BOTH, expand=True)
@@ -19,15 +18,26 @@ class GuestAccount(tk.Frame):
         notebook.add(info_frame, text="Личный кабинет", image=self.user_icon, compound=tk.LEFT)
         notebook.add(reservation_frame, text="Бронирование", image=self.booking_icon, compound=tk.LEFT)
 
+        try:
+            if current_user.in_hotel:
+                self.vending = VendingMachine()
+                self.vending.idMachine = db.get_idVending(current_user.in_hotel)
+                self.vending_icon = tk.PhotoImage(file="venv/icons/vending_icon.png")
+                vending_frame = GuestsVending(notebook, db, self.vending)
+                notebook.add(vending_frame, text="Торговый автомат", image=self.vending_icon, compound=tk.LEFT)
+        except Exception as e:
+            print('vending error: ', e)
+
+
+
+
 class AccountInfo(tk.Frame):
     def __init__(self, notebook, db, current_user):
         tk.Frame.__init__(self, notebook)
         self.db = db
         self.user_reservaions = self.get_reservations(current_user.phone)
-        #self.current_user = current_user
         welcome_label = tk.Label(self, text='Добро пожаловать!')
         welcome_label.grid(row=1, column=0, padx=20)
-        #print("telefon", current_user.phone, current_user.email)
         name_label = tk.Label(self, text = f'Имя: {current_user.name} {current_user.surname}')
         name_label.grid(row=2, column=0, padx=20)
 
@@ -45,18 +55,11 @@ class AccountInfo(tk.Frame):
             user_reservation = []
             reservations = self.db.get_users_reservaion(phone)
             for r in reservations:
-                #print(str(f"{r['country']}, {r['city']}, {r['adress']}"))
                 adress_str = str(f"{r['country']}, {r['city']}, {r['adress']}")
                 user_reservation.append((adress_str, str(r['start_date']), str(r['end_date'])))
-            #print(user_reservation)
             return user_reservation
         except Exception as e:
             print(e)
-
-
-
-        print(reservations)
-
 
 class GuestReservation(tk.Frame):
     def __init__(self, notebook, db, current_user):
@@ -113,12 +116,9 @@ class GuestReservation(tk.Frame):
         return 1
 
     def get_idHotel(self, event):
-        #print("getigHotel")
         try:
             selection = self.hotel_list.get()
-            #print(selection)
             selection = selection.split(', ')[2]
-            #print(selection)
             for adr in self.full_adresses:
                 for key, value in adr.items():
                     if value == selection:
@@ -130,18 +130,14 @@ class GuestReservation(tk.Frame):
 
     def get_rooms(self):
         try:
-            #print(self.date1.get_date())
             self.full_rooms = []
             for type in [1, 3, 4]:
-                #print("TYPE", type)
                 try:
                     self.full_rooms.append(self.db.get_rooms(self.idHotel, type, self.date1.get_date(), self.date2.get_date())[0])
-                    #print(self.full_rooms)
                 except Exception as e:
                     print("Get rooms from db error:", e)
             self.rooms = [f"Тип комнаты: {room['type_name']}. " \
                           f"{room['facilities']}, {room['price']}$. Колличество: {room['count']}" for room in self.full_rooms]
-            #print(self.rooms)
             self.rooms_listbox['listvariable'] = tk.Variable(value=self.rooms)
             self.calc_price("<<ListboxSelect>>")
         except Exception as e:
@@ -151,11 +147,9 @@ class GuestReservation(tk.Frame):
         try:
             selection = self.rooms_listbox.curselection()
             delta = (self.date2.get_date() - self.date1.get_date()).days
-            #print('DELTA:', delta)
             self.price = self.full_rooms[selection[0]]['price'] * delta
             self.roomType = self.full_rooms[selection[0]]['type_name']
             self.price_label['text'] = f'Итоговая стоимость бронирования: {self.price}$'
-            #print(f"Price = {self.price}, {delta}")
         except Exception as e:
             print(e)
 
@@ -165,6 +159,142 @@ class GuestReservation(tk.Frame):
         except Exception as e:
             print(e)
 
+class GuestsVending(tk.Frame):
+    def __init__(self, notebook, db, vending):
+        tk.Frame.__init__(self, notebook)
+        self.db = db
+        self.vending = vending
+        self.products = {}
+        self.cart_items = []
+        for c in range(7): self.columnconfigure(index=c, weight=1)
+        for r in range(7): self.rowconfigure(index=r, weight=1)
+        self.draw_vending()
+        self.get_products()
+
+    def draw_vending(self):
+        'колаб вода сендвичб батончикб сок чипсы '
+        self.vend = tk.Frame(self)
+        self.vend.grid(sticky='ns')
+
+        for c in range(2): self.vend.columnconfigure(index=c, weight=1)
+        for r in range(3): self.vend.rowconfigure(index=r, weight=1)
+
+        self.water_icon = tk.PhotoImage(file="venv/icons/water_icon.png")
+        self.water_btn = tk.Button(self.vend, text='2', image=self.water_icon, compound="top", command=lambda: self.add_to_cart('вода', '70'))
+        self.water_btn.grid(row=0, column=0)
+
+        self.cola_icon = tk.PhotoImage(file="venv/icons/cola_icon.png")
+        self.cola_btn = tk.Button(self.vend, text='3', image=self.cola_icon, compound="top", command=lambda: self.add_to_cart('вода', '80'))
+        self.cola_btn.grid(row=0, column=1)
+
+        self.juice_icon = tk.PhotoImage(file="venv/icons/juice_icon.png")
+        self.juice_btn = tk.Button(self.vend, text='3', image=self.juice_icon, compound="top", command=lambda: self.add_to_cart('вода', '70'))
+        self.juice_btn.grid(row=2, column=0)
+
+        self.sandwich_icon = tk.PhotoImage(file="venv/icons/sandwich_icon.png")
+        self.sandwich_btn = tk.Button(self.vend, text='3', image=self.sandwich_icon, compound="top", command=lambda: self.add_to_cart('вода', '160'))
+        self.sandwich_btn.grid(row=2, column=1)
+
+        self.chips_icon = tk.PhotoImage(file="venv/icons/chips_icon.png")
+        self.chips_btn = tk.Button(self.vend, text='3', image=self.chips_icon, compound="top", command=lambda: self.add_to_cart('вода', '80'))
+        self.chips_btn.grid(row=3, column=0)
+
+        self.bar_icon = tk.PhotoImage(file="venv/icons/bar_icon.png")
+        self.bar_btn = tk.Button(self.vend, text='3', image=self.bar_icon, compound="top", command=lambda: self.add_to_cart('вода', '60'))
+        self.bar_btn.grid(row=3, column=1)
+
+        self.buy_btn = tk.Button(self, text='Купить', command=self.buy_items)
+        self.buy_btn.grid(row=4, column=0, pady=10)
+
+        self.cancel_btn = tk.Button(self, text='Отмена', command=self.clear_cart)
+        self.cancel_btn.grid(row=4, column=1, pady=10)
+
+        self.cart = ttk.Treeview(self)
+        self.cart['columns'] = ('Product Name', 'Price')
+        self.cart.heading('#0', text='№')
+        self.cart.column('#0', width=50)
+        self.cart.heading('Product Name', text='Название товара')
+        self.cart.column('Product Name', width=150)
+        self.cart.heading('Price', text='Цена')
+        self.cart.column('Price', width=100)
+        self.cart.grid(row=1,column=5, columnspan=2, padx=10, pady=10)
+        self.update_cart_display()
+
+
+    def get_products(self):
+        self.products = self.db.get_products(self.vending.idMachine)
+        buttons_info = {
+            'вода': self.water_btn,
+            'кола': self.cola_btn,
+            'сок': self.juice_btn,
+            'сэндвич': self.sandwich_btn,
+            'чипсы': self.chips_btn,
+            'батончик': self.bar_btn
+        }
+        for product in self.products:
+            product_name = product['product_name']
+            quantity = product['quantity']
+            product_price = product['product_price']
+
+            # Проверяем, есть ли продукт на кнопке, и если есть, меняем текст кнопки
+            if product_name in buttons_info:
+                button = buttons_info[product_name]
+                button['text'] = f'{product_price}р.'
+
+    def add_to_cart(self, product_name, product_price):
+        self.cart_items.append({'product_name': product_name, 'product_price': product_price})
+        print(f'Товар "{product_name}" добавлен в корзину.')
+        self.update_cart_display()  # Обновляем отображение корзины
+
+    def decrease_quantity(self, product_name):
+        for product in self.products:
+            if product['product_name'] == product_name:
+                product['quantity'] -= 1
+                if product['quantity'] < 0:
+                    product['quantity'] = 0
+                self.update_button_text(product_name, product['quantity'])
+                print(f'Количество товара "{product_name}" в автомате уменьшено.')
+
+    def update_button_text(self, product_name, quantity):
+        buttons_info = {
+            'вода': self.water_btn,
+            'кола': self.cola_btn,
+            'сок': self.juice_btn,
+            'сэндвич': self.sandwich_btn,
+            'чипсы': self.chips_btn,
+            'батончик': self.bar_btn
+        }
+
+        if product_name in buttons_info:
+            button = buttons_info[product_name]
+            button['text'] = f'{quantity}р.' if quantity > 0 else 'Нет в наличии'
+
+    def buy_items(self):
+        if len(self.cart) > 0:
+            for item in self.cart:
+                self.decrease_quantity(item['product_name'])
+            print('Покупка завершена. Корзина опустошена.')
+            self.cart = []
+        else:
+            print('Корзина пуста. Нечего покупать.')
+
+    def clear_cart(self):
+        children_count = len(self.cart.get_children())
+        if children_count > 0:
+            self.cart.delete(*self.cart.get_children())  # Удаляем все дочерние элементы
+            self.cart_items = []  # Очищаем список товаров в корзине
+            print('Корзина опустошена.')
+        else:
+            print('Корзина уже пуста.')
+
+    def update_cart_display(self):
+        for item in self.cart.get_children():
+            self.cart.delete(item)
+
+        for index, item in enumerate(self.cart_items, start=1):
+            product_name = item['product_name']
+            product_price = item['product_price']
+            self.cart.insert('', 'end', text=str(index), values=(product_name, f"{str(product_price)}р."))
 
 
 
