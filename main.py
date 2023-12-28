@@ -13,7 +13,7 @@ class Main(tk.Tk):
         self.container.grid_columnconfigure(0, weight=1)
 
         self.title("Hotel")
-        self.geometry('1024x600')
+        self.geometry('720x600')
         self.frames = {}
 
         #for F in (Login, Registration, GuestAccount):

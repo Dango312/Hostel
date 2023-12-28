@@ -33,26 +33,32 @@ class AccountInfo(tk.Frame):
         tk.Frame.__init__(self, notebook)
         self.db = db
         self.current_user = current_user
-        self.user_reservaions = self.get_reservations(current_user.phone)
+        self.user_reservations = self.get_reservations(current_user.phone)
+
         welcome_label = tk.Label(self, text='Добро пожаловать!')
-        welcome_label.grid(row=1, column=0, padx=20)
-        name_label = tk.Label(self, text = f'Имя: {current_user.name} {current_user.surname}')
-        name_label.grid(row=2, column=0, padx=20)
+        welcome_label.grid(row=0, column=0, padx=20, pady=10, sticky='w')
+
+        name_label = tk.Label(self, text=f'Имя: {current_user.name} {current_user.surname}')
+        name_label.grid(row=1, column=0, padx=20, pady=5, sticky='w')
 
         self.update_btn = tk.Button(self, text='Обновить', command=self.update_tables)
-        self.update_btn.grid(row=4, column=5, padx=20, pady=10)
+        self.update_btn.grid(row=1, column=1, padx=20, pady=10, sticky='e')
 
-        colums = ['Отель', 'Дата заезда', 'Дата выезда']
-        self.reservations = ttk.Treeview(self, columns=colums, show='headings')
-        self.reservations.grid(row=2, column=5)
-        self.reservations.heading("Отель", text="Отель")
-        self.reservations.heading("Дата заезда", text="Дата заезда")
-        self.reservations.heading("Дата выезда", text="Дата выезда")
-        self.reservations.column("#1", stretch=False, width=200)
-        self.reservations.column("#2", stretch=False, width=120)
-        self.reservations.column("#3", stretch=False, width=120)
-        for r in self.user_reservaions:
+        columns = ['Отель', 'Дата заезда', 'Дата выезда']
+        self.reservations = ttk.Treeview(self, columns=columns, show='headings')
+        self.reservations.grid(row=2, column=0, columnspan=2, padx=20, pady=5, sticky='nsew')
+
+        for col in columns:
+            self.reservations.heading(col, text=col)
+            self.reservations.column(col, stretch=False, width=200)
+
+        for r in self.user_reservations:
             self.reservations.insert("", tk.END, values=r)
+
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+
 
     def get_reservations(self, phone):
         try:
@@ -87,39 +93,55 @@ class GuestReservation(tk.Frame):
         self.rooms_var = tk.Variable(value=self.rooms)
         self.roomType=0
 
-        adress_label = tk.Label(self, text = 'Страна или город')
-        adress_label.grid(row=1, column=0, padx=20)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(7, weight=1)
+        self.grid_columnconfigure(5, weight=1)
 
+        # Label and Entry for Country/City
+        adress_label = tk.Label(self, text='Страна или город')
+        adress_label.grid(row=1, column=0, sticky='w', padx=10, pady=5)
         self.adress_entry = tk.Entry(self, validate="key", validatecommand=(self.register(self.get_hotels), "%P"))
-        self.adress_entry.grid(row=3, column=0, padx=20)
+        self.adress_entry.grid(row=2, column=0, padx=10, pady=5, sticky='ew')
 
+        # Combobox for Hotel selection
         self.hotel_list = ttk.Combobox(self, values=self.combobox_adresses, state="readonly", width=50)
-        self.hotel_list.grid(row=4, column=0, padx=30, pady=20)
+        self.hotel_list.grid(row=3, column=0, padx=10, pady=5, sticky='ew')
         self.hotel_list.bind("<<ComboboxSelected>>", self.get_idHotel)
 
+        # Listbox for displaying available rooms
         self.rooms_listbox = tk.Listbox(self, listvariable=self.rooms_var, width=80)
-        self.rooms_listbox.grid(row=6, column=0, padx=30)
+        self.rooms_listbox.grid(row=7, column=0, padx=30, pady=10, columnspan=4, sticky='nsew')
         self.rooms_listbox.bind("<<ListboxSelect>>", self.calc_price)
 
-        start_label = tk.Label(self, text = 'Начало бронирования:')
-        start_label.grid(row=1, column=2, padx=20)
-        self.date1 = tkcalendar.DateEntry(self, mindate=datetime.now(),
-                                          maxdate=(datetime.now() + timedelta(days=365)))
-        self.date1.grid(row=1, column=3, padx=10)
+        # DateEntry widgets for booking dates
+        start_label = tk.Label(self, text='Начало бронирования:')
+        start_label.grid(row=1, column=2, padx=10, pady=5)
+        self.date1 = tkcalendar.DateEntry(self, mindate=datetime.now(), maxdate=(datetime.now() + timedelta(days=365)))
+        self.date1.grid(row=2, column=2, padx=10, pady=5)
         self.date1.bind("<<DateEntrySelected>>", self.calc_price)
 
-        end_label = tk.Label(self, text = 'Окончание бронирования:')
-        end_label.grid(row=4, column=2, padx=20)
+        end_label = tk.Label(self, text='Окончание бронирования:')
+        end_label.grid(row=4, column=2, padx=10, pady=5)
         self.date2 = tkcalendar.DateEntry(self, mindate=(datetime.now() + timedelta(days=2)),
                                           maxdate=(datetime.now() + timedelta(days=365)))
-        self.date2.grid(row=4, column=3, padx=10)
+        self.date2.grid(row=5, column=2, padx=10, pady=5)
         self.date2.bind("<<DateEntrySelected>>", self.calc_price)
 
-        self.price_label = tk.Label(self, text = f'Итоговая стоимость бронирования: {self.price}$')
-        self.price_label.grid(row=1, column=4, padx=10)
+        # Label to display the total price
+        self.price_label = tk.Label(self, text=f'Итоговая стоимость бронирования: {self.price}$')
+        self.price_label.grid(row=8, column=0, columnspan=4, padx=10, pady=5, sticky='w')
 
-        self.reservate_btn = tk.Button(self, text = 'Забронировать', command=self.create_reservation)
-        self.reservate_btn.grid(row=3, column=4, padx=10)
+        # Button to create a reservation
+        self.reservate_btn = tk.Button(self, text='Забронировать', command=self.create_reservation)
+        self.reservate_btn.grid(row=9, column=0, columnspan=4, padx=10, pady=5, sticky='ew')
+
+        for i in range(10):
+            self.grid_rowconfigure(i, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(2, weight=1)
+        self.grid_columnconfigure(3, weight=1)
 
     def get_hotels(self, adress):
         self.full_adresses = self.db.get_hotels(adress)
@@ -180,41 +202,46 @@ class GuestsVending(tk.Frame):
         self.vending = vending
         self.products = {}
         self.cart_items = []
-        for c in range(7): self.columnconfigure(index=c, weight=1)
-        for r in range(7): self.rowconfigure(index=r, weight=1)
+        #for c in range(7): self.columnconfigure(index=c, weight=1)
+        #for r in range(7): self.rowconfigure(index=r, weight=1)
         self.draw_vending()
         self.get_products()
 
     def draw_vending(self):
-        'колаб вода сендвичб батончикб сок чипсы '
         self.vend = tk.Frame(self)
         self.vend.grid(sticky='ns')
 
-        for c in range(2): self.vend.columnconfigure(index=c, weight=1)
-        for r in range(3): self.vend.rowconfigure(index=r, weight=1)
+        # Icon sizes
+        icon_size = (16, 16)
 
         self.water_icon = tk.PhotoImage(file="venv/icons/water_icon.png")
-        self.water_btn = tk.Button(self.vend, text='2', image=self.water_icon, compound="top", command=lambda: self.add_to_cart('вода', '70'))
+        self.water_btn = tk.Button(self.vend, text='2', image=self.water_icon, compound="top",
+                                   command=lambda: self.add_to_cart('вода', '70'))
         self.water_btn.grid(row=0, column=0)
 
         self.cola_icon = tk.PhotoImage(file="venv/icons/cola_icon.png")
-        self.cola_btn = tk.Button(self.vend, text='3', image=self.cola_icon, compound="top", command=lambda: self.add_to_cart('кола', '80'))
+        self.cola_btn = tk.Button(self.vend, text='3', image=self.cola_icon, compound="top",
+                                  command=lambda: self.add_to_cart('кола', '80'))
         self.cola_btn.grid(row=0, column=1)
 
         self.juice_icon = tk.PhotoImage(file="venv/icons/juice_icon.png")
-        self.juice_btn = tk.Button(self.vend, text='3', image=self.juice_icon, compound="top", command=lambda: self.add_to_cart('сок', '70'))
+        self.juice_btn = tk.Button(self.vend, text='3', image=self.juice_icon, compound="top",
+                                   command=lambda: self.add_to_cart('сок', '70'))
         self.juice_btn.grid(row=2, column=0)
 
         self.sandwich_icon = tk.PhotoImage(file="venv/icons/sandwich_icon.png")
-        self.sandwich_btn = tk.Button(self.vend, text='3', image=self.sandwich_icon, compound="top", command=lambda: self.add_to_cart('сэндвич', '160'))
+        self.sandwich_btn = tk.Button(self.vend, text='3', image=self.sandwich_icon, compound="top",
+                                      command=lambda: self.add_to_cart('сэндвич', '160'))
         self.sandwich_btn.grid(row=2, column=1)
 
         self.chips_icon = tk.PhotoImage(file="venv/icons/chips_icon.png")
-        self.chips_btn = tk.Button(self.vend, text='3', image=self.chips_icon, compound="top", command=lambda: self.add_to_cart('чипсы', '80'))
+        self.chips_btn = tk.Button(self.vend, text='3', image=self.chips_icon, compound="top",
+                                   command=lambda: self.add_to_cart('чипсы', '80'))
         self.chips_btn.grid(row=3, column=0)
 
         self.bar_icon = tk.PhotoImage(file="venv/icons/bar_icon.png")
-        self.bar_btn = tk.Button(self.vend, text='3', image=self.bar_icon, compound="top", command=lambda: self.add_to_cart('батончик', '60'))
+        self.bar_btn = tk.Button(self.vend, text='3', image=self.bar_icon, compound="top",
+                                 command=lambda: self.add_to_cart('батончик', '60'))
         self.bar_btn.grid(row=3, column=1)
 
         self.buy_btn = tk.Button(self, text='Купить', command=self.buy_items)
@@ -231,7 +258,7 @@ class GuestsVending(tk.Frame):
         self.cart.column('Product Name', width=150)
         self.cart.heading('Price', text='Цена')
         self.cart.column('Price', width=100)
-        self.cart.grid(row=1,column=5, columnspan=2, padx=10, pady=10)
+        self.cart.grid(row=1, column=5, columnspan=2, padx=10, pady=10)
         self.update_cart_display()
 
     def get_products(self):
@@ -250,7 +277,6 @@ class GuestsVending(tk.Frame):
             quantity = product['quantity']
             product_price = product['product_price']
 
-            # Проверяем, есть ли продукт на кнопке, и если есть, меняем текст кнопки
             if product_name in buttons_info:
                 button = buttons_info[product_name]
                 button['text'] = f'{product_price}р.'
@@ -273,7 +299,7 @@ class GuestsVending(tk.Frame):
                 if product['quantity'] < 0:
                     product['quantity'] = 0
                 #self.update_button_text(product_name, product['quantity'])
-                print(self.products)
+                #print(self.products)
 
     def buy_items(self):
         self.db.buy_products(self.vending.idMachine, self.products)

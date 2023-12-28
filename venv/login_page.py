@@ -6,21 +6,22 @@ class Login(tk.Frame):
     def __init__(self, parent, controller, db, current_user):
         tk.Frame.__init__(self, parent)
         #self.db = db
-
+        #for c in range(3): self.columnconfigure(index=c, weight=1)
+        #for r in range(5): self.rowconfigure(index=r, weight=1)
         self.email = tk.StringVar()
         self.password = tk.StringVar()
 
         label_email = tk.Label(self, text="Почта:")
-        label_email.grid(row=1, column=0, padx=20)
+        label_email.grid(row=1, column=0, padx=20, pady=10, sticky="e")
 
         email_entry = tk.Entry(self, textvariable=self.email)
-        email_entry.grid(row=2, column=0, padx=20)
+        email_entry.grid(row=1, column=1, padx=20, pady=10, sticky="w")
 
         label = tk.Label(self, text="Пароль:")
-        label.grid(row=3, column=0, padx=20)
+        label.grid(row=2, column=0, padx=20, pady=10, sticky="e")
 
         pwd_entry = tk.Entry(self, textvariable=self.password, show="*")
-        pwd_entry.grid(row=4, column=0, padx=20)
+        pwd_entry.grid(row=2, column=1, padx=20, pady=10, sticky="w")
 
         def login_user():
             user_info = db.login(email_entry.get(), pwd_entry.get(), 'guest')
@@ -33,11 +34,11 @@ class Login(tk.Frame):
                     current_user.set_admin_info(user_info)
                     controller.show_admin_account(current_user)
 
-        login = tk.Button(self, text="Войти", command=login_user)
-        login.grid(row=5, column=0, padx=20)
+        login = tk.Button(self, text="Войти", command=login_user, width=12)
+        login.grid(row=3, column=1, padx=20, pady=10, sticky="e")
 
-        gotoreg = tk.Button(self, text="Создать аккаунт", command = lambda: controller.show_frame(Registration))
-        gotoreg.grid(row=6, column=0, padx=20)
+        gotoreg = tk.Button(self, text="Создать аккаунт", command=lambda: controller.show_frame(Registration))
+        gotoreg.grid(row=4, column=1, padx=20, pady=10, sticky="e")
 
 class Registration(tk.Frame):
     def __init__(self, parent, controller,db):

@@ -100,17 +100,15 @@ class DataBase():
 
     def get_rooms(self, hotel, type, date1, date2):
         try:
-            print(hotel, type, date1, date2)
             cursor = self.connection.cursor()
             select_hotel_rooms = f"SELECT DISTINCT type_name, facilities, price, getAvailableRoomsCount({hotel}, {type}, '{date1}', '{date2}') AS count FROM rooms " \
                                  f"JOIN types ON rooms.types_idType = types.idType " \
                                  f"WHERE rooms.hotels_idHotel = {hotel} AND types.idType = '{type}'"
             cursor.execute(select_hotel_rooms)
             rows = cursor.fetchall()
-            #print(rows)
             return rows
         except Exception as e:
-            print(e)
+            print("get rooms error:", e)
 
     def reservate(self, phone, hotel, type, date1, date2):
         types = {'economy':1, 'standart':3, 'business':4}

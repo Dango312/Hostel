@@ -33,25 +33,31 @@ class HotelInfo(tk.Frame):
         tk.Frame.__init__(self, notebook)
         self.db = db
         self.current_user = current_user
+        for c in range(4): self.columnconfigure(index=c, weight=1)
+        for r in range(4): self.rowconfigure(index=r, weight=1)
 
-        welcome_lable = tk.Label(self, text = f"Добро пожаловать {current_user.name}!")
-        welcome_lable.grid(row=1, column=0)
+        welcome_label = tk.Label(self, text=f"Добро пожаловать {current_user.name}!")
+        welcome_label.grid(row=1, column=1, columnspan=2)
 
-        self.hotel_lable = tk.Label(self, text=f"Отель: {self.employee_hotel(current_user.idHotel)}")
-        self.hotel_lable.grid(row=2, column=0)
+        hotel_label = tk.Label(self, text=f"Отель: {self.employee_hotel(current_user.idHotel)}")
+        hotel_label.grid(row=2, column=1, columnspan=2)
 
-        self.update_btn = tk.Button(self, text='Обновить', command=self.update_tables)
-        self.update_btn.grid(row=1, column=1, padx=20, pady=10)
+        update_btn = tk.Button(self, text='Обновить', command=self.update_tables)
+        update_btn.grid(row=4, column=3, sticky='e')
 
         self.current_rooms_info(current_user.idHotel)
 
         colums = ['Имя', 'Номер комнаты', 'Статус', 'Тип комнаты']
         self.rooms = ttk.Treeview(self, columns=colums, show='headings')
-        self.rooms.grid(row=4, column=2)
+        self.rooms.grid(row=4, column=0, columnspan=3, sticky='we')
         self.rooms.heading("Имя", text="Имя", command=lambda: self.sort(0, False))
         self.rooms.heading("Номер комнаты", text="Номер комнаты", command=lambda: self.sort(1, False))
         self.rooms.heading("Статус", text="Статус", command=lambda: self.sort(2, False))
         self.rooms.heading("Тип комнаты", text="Тип комнаты", command=lambda: self.sort(3, False))
+        self.rooms.column("#1", stretch=False, width=150)
+        self.rooms.column("#2", stretch=False, width=100)
+        self.rooms.column("#3", stretch=False, width=100)
+        self.rooms.column("#4", stretch=False, width=100)
         for r in self.current_rooms_info(current_user.idHotel):
             self.rooms.insert("", tk.END, values=r)
 
@@ -59,6 +65,21 @@ class HotelInfo(tk.Frame):
         info = self.db.select_hotel(idHotel)[0]
         info = str(f"{info['country']}, {info['city']}, {info['adress']}")
         return info
+
+    def setup_rooms_table(self, idHotel):
+        columns = ['Имя', 'Номер комнаты', 'Статус', 'Тип комнаты']
+        self.rooms = ttk.Treeview(self, columns=columns, show='headings')
+        self.rooms.grid(row=4, column=0, columnspan=3, sticky='we')
+
+        for col in columns:
+            self.rooms.heading(col, text=col, command=lambda c=col: self.sort(c, False))
+
+        self.rooms.column("#1", stretch=False, width=150)
+        self.rooms.column("#2", stretch=False, width=100)
+        self.rooms.column("#3", stretch=False, width=100)
+        self.rooms.column("#4", stretch=False, width=100)
+
+        self.update_rooms_table(idHotel)
 
     def current_rooms_info(self, idHotel):
         hotel_rooms = []
@@ -91,18 +112,18 @@ class HotelReservations(tk.Frame):
     def put_widgets(self):
         self.selected_reservation = []
 
-        self.checkin_btn = tk.Button(self, text = 'Заселить', command=self.check_in_guest)
+        self.checkin_btn = tk.Button(self, text='Заселить', command=self.check_in_guest)
         self.checkin_btn.grid(row=0, column=0, padx=10, pady=10)
 
-        self.checkout_btn = tk.Button(self, text = 'Выселить', command=self.check_out_guest)
+        self.checkout_btn = tk.Button(self, text='Выселить', command=self.check_out_guest)
         self.checkout_btn.grid(row=1, column=0, padx=40, pady=10)
 
         self.update_btn = tk.Button(self, text='Обновить', command=self.update_tables)
         self.update_btn.grid(row=1, column=1, padx=20, pady=10)
 
-        colums = ['ID','Телефон', 'Имя', '№ комнаты', 'Начало', 'Окончание', 'Заселился', 'Выселился']
-        self.rooms = ttk.Treeview(self, columns=colums, show='headings', selectmode='browse')
-        self.rooms.grid(row=10, column=0, pady = 40, columnspan=3)
+        columns = ['ID', 'Телефон', 'Имя', '№ комнаты', 'Начало', 'Окончание', 'Заселился', 'Выселился']
+        self.rooms = ttk.Treeview(self, columns=columns, show='headings', selectmode='browse')
+        self.rooms.grid(row=2, column=0, pady=20, columnspan=3, sticky="nsew")
         self.rooms.heading("ID", text="ID", command=lambda: self.sort(0, False))
         self.rooms.heading("Телефон", text="Телефон", command=lambda: self.sort(0, False))
         self.rooms.heading("Имя", text="Имя", command=lambda: self.sort(1, False))
@@ -122,10 +143,13 @@ class HotelReservations(tk.Frame):
         #Скролбар для таблицы
         self.scrollbar = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self.rooms.yview)
         self.rooms.configure(yscroll=self.scrollbar.set)
-        self.scrollbar.grid(row=0, column=1, sticky="ns")
+        self.scrollbar.grid(row=2, column=2, sticky="ns")
 
 
         self.rooms.bind("<<TreeviewSelect>>", self.item_selected)
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
 
         for r in self.get_hotel_reservations(self.current_user.idHotel):
             self.rooms.insert("", tk.END, values=r)
@@ -173,8 +197,8 @@ class AdminVending(tk.Frame):
         self.vending = vending
         self.products = {}
         self.cart_items = []
-        for c in range(7): self.columnconfigure(index=c, weight=1)
-        for r in range(7): self.rowconfigure(index=r, weight=1)
+        for c in range(10): self.columnconfigure(index=c, weight=1)
+        for r in range(10): self.rowconfigure(index=r, weight=1)
         self.draw_vending()
         self.get_products()
 
@@ -210,12 +234,10 @@ class AdminVending(tk.Frame):
         self.bar_btn = tk.Button(self.vend, text='3', image=self.bar_icon, compound="top", command=lambda: self.add_to_cart('батончик', '60'))
         self.bar_btn.grid(row=3, column=1)
 
-        self.buy_btn = tk.Button(self.vend, text='Купить', command=self.buy_items)
-        self.buy_btn.grid(row=4, column=0, pady=10)
+        self.buy_btn = tk.Button(self, text='Купить', command=self.buy_items)
+        self.buy_btn.grid(row=1, column=0, columnspan=2, sticky='we', padx=10, pady=10)
 
-        self.cancel_btn = tk.Button(self.vend, text='Отмена', command=self.clear_cart)
-        self.cancel_btn.grid(row=4, column=1, pady=10)
-
+        # Cart display
         self.cart = ttk.Treeview(self)
         self.cart['columns'] = ('Product Name', 'Price')
         self.cart.heading('#0', text='№')
@@ -224,8 +246,15 @@ class AdminVending(tk.Frame):
         self.cart.column('Product Name', width=150)
         self.cart.heading('Price', text='Цена')
         self.cart.column('Price', width=100)
-        self.cart.grid(row=0,column=3, columnspan=2, padx=10, pady=10)
+        self.cart.grid(row=0, column=3, columnspan=2, padx=10, pady=10)
         self.update_cart_display()
+
+        self.cart.grid(row=2, column=0, columnspan=2, sticky='nsew', padx=10, pady=10)
+        self.update_cart_display()
+
+        # Widgets for changing product quantity
+        self.products_table = ttk.Treeview(self)
+
 
     def draw_products_table(self):
         self.products_table = ttk.Treeview(self)
@@ -241,11 +270,14 @@ class AdminVending(tk.Frame):
         self.products_table.grid(row=4, column=7, columnspan=2, padx=10, pady=10)
         self.update_products_table()
 
-        # Добавление поля для ввода нового количества товара
+        # Cart displayed to the left below the table
+        self.products_table.grid(row=0, column=8, rowspan=4, columnspan=2, sticky='nsew', padx=10, pady=10)
+        self.update_products_table()
+
         self.new_quantity_entry = tk.Entry(self)
-        self.new_quantity_entry.grid(row=5, column=7, padx=5, pady=5)
+        self.new_quantity_entry.grid(row=4, column=7, padx=5, pady=5)
         self.change_quantity_btn = tk.Button(self, text='Изменить количество', command=self.change_quantity)
-        self.change_quantity_btn.grid(row=5, column=8, padx=5, pady=5)
+        self.change_quantity_btn.grid(row=4, column=8, padx=5, pady=5)
 
     def get_products(self):
         self.products = self.db.get_products(self.vending.idMachine)
